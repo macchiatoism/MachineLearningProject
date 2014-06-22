@@ -18,40 +18,37 @@ Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible t
 >- should also apply your machine learning algorithm to the 20 test cases available in the test data above
 ...The packages we use here include caret, randonForest and e1071. 
 ```{r}
-setwd("~/R WS/MachineLearningProject") # set current workspace
+# setwd("~/R WS/MachineLearningProject/MachineLearningProject") # set current workspace, edit here if any differences
 library(caret) # helpful library for machine learning
 library(randomForest) # library of Breiman and Cutler's random forests for classification and regression
 library(e1071) 
-trainedData <- read.csv("pml-training.csv") # import training data
-   
-
-
-
-NAs <- apply(trainRawData,2,function(x) {sum(is.na(x))}) 
-    validData <- trainRawData[,which(NAs == 0)]
-    trainIndex <- createDataPartition(y = validData$classe, p=0.6,list=FALSE)
-    trainData <- validData[trainIndex,]
-    testData <- validData[-trainIndex,]
-    removeIndex <- grep("timestamp|X|user_name|new_window",names(trainData))
-    trainData <- trainData[,-removeIndex]
-    modFit <- train(trainData$classe ~ roll_belt + pitch_belt + yaw_belt + gyros_belt_x + gyros_belt_y + gyros_belt_z + accel_belt_x + accel_belt_y + accel_belt_z + magnet_belt_x + magnet_belt_y + magnet_belt_z + gyros_arm_x + gyros_arm_y + gyros_arm_z + accel_arm_x + accel_arm_y + accel_arm_z + magnet_arm_x + magnet_arm_y + magnet_arm_z + gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + magnet_dumbbell_x + magnet_dumbbell_y + magnet_dumbbell_z + gyros_forearm_x + gyros_forearm_y + gyros_forearm_z + accel_forearm_x + accel_forearm_y + accel_forearm_z + magnet_forearm_x + magnet_forearm_y + magnet_forearm_z,data = trainData,preProcess=c("center","scale"),method="rf")
-    NAs <- apply(testData,1,function(x) {sum(is.na(x))}) 
-    validTest <- testData[which(NAs == 0),]
-    print(confusionMatrix(predict(modFit,validTest),validTest$classe))
-    test_clase <- read.csv("pml-testing.csv")
-    prediction <- predict(modFit,test_clase)
-    prediction
-
 ```
-
-
+We start with data training process.
+Cross-validation is a model validation technique used to evaluate how the results of a statistical analysis can be generalized to a set of independent data. Notice that in a prediction problem it is normal to have a set of data you can develop your model with (training data) and another set, treated like unknown data, you can test your model with (testing data).
 ```{r}
-summary(cars)
+trainedData <- read.csv("pml-training.csv") # import training data
+NAs <- apply(trainedData,2,function(x) {sum(is.na(x))}) 
+validData <- trainedData[,which(NAs == 0)]
+trainedIndex <- createDataPartition(y = validData$classe, p=0.8,list=FALSE)
+trainData <- validData[trainedIndex,]
+testData <- validData[-trainedIndex,]
+removeIndex <- grep("timestamp|X|user_name|new_window",names(trainData))
+trainData <- trainData[,-removeIndex]
 ```
-
-You can also embed plots, for example:
-
-```{r fig.width=7, fig.height=6}
-plot(cars)
+...In this project, you can use an important set of data (with an high number of cases) and you will know its classification by the proposed categories (A,B,C,D,E). To do a cross-validation, you need to divide the data in two groups: on one side you will have the training data and on the other side you will have the testing data. So,you  can understand how good your model is.
+...To split the data I used the caret function "createDataPartition", and the datas has been  splitted in various size to test more than one option, in particular I used training data=80% of the total data. 
+```{r}
+dataModel <- train(trainData$classe ~  gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z,data = trainData,preProcess=c("scale"),method="rf")
 ```
-
+For training stage it has been used caret R package, in particular train function. This function allows different configurations and several training and preprocessing  methods. We use Random forest - rf, see [http://cran.r-project.org/web/packages/randomForest/index.html](http://cran.r-project.org/web/packages/randomForest/index.html) for more details. 
+```{r}
+NAs <- apply(testData,1,function(x) {sum(is.na(x))})
+validTest <- testData[which(NAs == 0),]
+print(confusionMatrix(predict(dataModel,validTest),validTest$classe))
+```
+With testing data and "predict" Caret-function we can make an idea of the accuracy of the model constructed with the training data.
+```{r}
+test_clase <- read.csv("pml-testing.csv")
+prediction <- predict(dataModel,test_clase)
+prediction
+```
