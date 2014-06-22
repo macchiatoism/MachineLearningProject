@@ -1,0 +1,57 @@
+Coursera Practical Machine Learning Project Report
+========================================================
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: [http://groupware.les.inf.puc-rio.br/har](http://groupware.les.inf.puc-rio.br/har) (see the section on the Weight Lifting Exercise Dataset). 
+
+## Datasets
+
+>- source : [http://groupware.les.inf.puc-rio.br/har]( http://groupware.les.inf.puc-rio.br/har)
+>- The training data for this project are available here: [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+>- The test data are available here: [https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)
+
+## Goal
+>- The goal of this project is to predict the manner in which they did the exercise ("classe" variable in the training set or the other variables to predict). 
+>- should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. 
+>- You will also use your prediction model to predict 20 different test cases. 
+>- should also apply your machine learning algorithm to the 20 test cases available in the test data above
+...The packages we use here include caret, randonForest and e1071. 
+```{r}
+setwd("~/R WS/MachineLearningProject") # set current workspace
+library(caret) # helpful library for machine learning
+library(randomForest) # library of Breiman and Cutler's random forests for classification and regression
+library(e1071) 
+trainedData <- read.csv("pml-training.csv") # import training data
+   
+
+
+
+NAs <- apply(trainRawData,2,function(x) {sum(is.na(x))}) 
+    validData <- trainRawData[,which(NAs == 0)]
+    trainIndex <- createDataPartition(y = validData$classe, p=0.6,list=FALSE)
+    trainData <- validData[trainIndex,]
+    testData <- validData[-trainIndex,]
+    removeIndex <- grep("timestamp|X|user_name|new_window",names(trainData))
+    trainData <- trainData[,-removeIndex]
+    modFit <- train(trainData$classe ~ roll_belt + pitch_belt + yaw_belt + gyros_belt_x + gyros_belt_y + gyros_belt_z + accel_belt_x + accel_belt_y + accel_belt_z + magnet_belt_x + magnet_belt_y + magnet_belt_z + gyros_arm_x + gyros_arm_y + gyros_arm_z + accel_arm_x + accel_arm_y + accel_arm_z + magnet_arm_x + magnet_arm_y + magnet_arm_z + gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z + accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z + magnet_dumbbell_x + magnet_dumbbell_y + magnet_dumbbell_z + gyros_forearm_x + gyros_forearm_y + gyros_forearm_z + accel_forearm_x + accel_forearm_y + accel_forearm_z + magnet_forearm_x + magnet_forearm_y + magnet_forearm_z,data = trainData,preProcess=c("center","scale"),method="rf")
+    NAs <- apply(testData,1,function(x) {sum(is.na(x))}) 
+    validTest <- testData[which(NAs == 0),]
+    print(confusionMatrix(predict(modFit,validTest),validTest$classe))
+    test_clase <- read.csv("pml-testing.csv")
+    prediction <- predict(modFit,test_clase)
+    prediction
+
+```
+
+
+```{r}
+summary(cars)
+```
+
+You can also embed plots, for example:
+
+```{r fig.width=7, fig.height=6}
+plot(cars)
+```
+
