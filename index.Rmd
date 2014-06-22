@@ -16,12 +16,21 @@ Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible t
 >- should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. 
 >- You will also use your prediction model to predict 20 different test cases. 
 >- should also apply your machine learning algorithm to the 20 test cases available in the test data above
-...The packages we use here include caret, randonForest and e1071. 
+...The packages we use here include caret, MASS, plyr, knitr and e1071. 
 ```{r}
 # setwd("~/R WS/MachineLearningProject/MachineLearningProject") # set current workspace, edit here if any differences
-library(caret) # helpful library for machine learning
-library(randomForest) # library of Breiman and Cutler's random forests for classification and regression
-library(e1071) 
+if (!require("bst",character.only = TRUE)){
+  install.packages("bst",dep=TRUE)}
+if (!require("caret",character.only = TRUE)){
+  install.packages("caret",dep=TRUE)}
+if (!require("e1071",character.only = TRUE)){
+  install.packages("e1071",dep=TRUE)}
+if (!require("plyr",character.only = TRUE)){
+  install.packages("plyr",dep=TRUE)}
+if (!require("MASS",character.only = TRUE)){
+  install.packages("MASS",dep=TRUE)}
+if (!require("knitr",character.only = TRUE)){
+  install.packages("knitr",dep=TRUE)}
 ```
 We start with data training process.
 Cross-validation is a model validation technique used to evaluate how the results of a statistical analysis can be generalized to a set of independent data. Notice that in a prediction problem it is normal to have a set of data you can develop your model with (training data) and another set, treated like unknown data, you can test your model with (testing data).
@@ -38,17 +47,36 @@ trainData <- trainData[,-removeIndex]
 ...In this project, you can use an important set of data (with an high number of cases) and you will know its classification by the proposed categories (A,B,C,D,E). To do a cross-validation, you need to divide the data in two groups: on one side you will have the training data and on the other side you will have the testing data. So,you  can understand how good your model is.
 ...To split the data I used the caret function "createDataPartition", and the datas has been  splitted in various size to test more than one option, in particular I used training data=80% of the total data. 
 ```{r}
-dataModel <- train(trainData$classe ~  gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z,data = trainData,preProcess=c("scale"),method="rf")
+dataModel <- train(trainData$classe ~  gyros_arm_x + gyros_arm_y + gyros_arm_z+
+                     accel_arm_x + accel_arm_y + accel_arm_z +
+                     gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z + 
+                     accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z +
+                     gyros_forearm_x + gyros_forearm_y + gyros_forearm_z + 
+                     accel_forearm_x + accel_forearm_y + accel_forearm_z,data = trainData,preProcess=c("center","scale"),
+                   maximize=TRUE,method = 'lda', verbose=TRUE)
 ```
-For training stage it has been used caret R package, in particular train function. This function allows different configurations and several training and preprocessing  methods. We use Random forest - rf, see [http://cran.r-project.org/web/packages/randomForest/index.html](http://cran.r-project.org/web/packages/randomForest/index.html) for more details. 
+...For training stage it has been used caret R package, in particular train function. This function allows different configurations and several training and preprocessing  methods, for example:
+-  Bayesian generalized linear model - bayesglm.
+-	CART - rpart.
+-	Linear discriminant analysis - lda. 
+-	Naive bayes - nb.
+-	Random forest - rf.  
+-	k-nearest neighbors - knn
+
+...We use Linear discriminant analysis (method='lda'), see [http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/lda.html](http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/lda.html) for more details. 
 ```{r}
 NAs <- apply(testData,1,function(x) {sum(is.na(x))})
 validTest <- testData[which(NAs == 0),]
 print(confusionMatrix(predict(dataModel,validTest),validTest$classe))
 ```
-With testing data and "predict" Caret-function we can make an idea of the accuracy of the model constructed with the training data.
+...With the 20 sets of testing data and "predict" Caret-function we can make an idea of the accuracy of the model constructed with the training data.
 ```{r}
 test_clase <- read.csv("pml-testing.csv")
 prediction <- predict(dataModel,test_clase)
-prediction
+```
+Below is the results of predictions of the 20 tests datasets.
+```{r}
+results<-as.data.frame(cbind(1:20,as.character(prediction)))
+names(results)<-(c("Test No.","Clase"))
+results
 ```

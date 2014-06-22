@@ -213,31 +213,176 @@ hr {
 <li>The goal of this project is to predict the manner in which they did the exercise (&ldquo;classe&rdquo; variable in the training set or the other variables to predict). </li>
 <li>should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. </li>
 <li>You will also use your prediction model to predict 20 different test cases. </li>
-<li>should also apply your machine learning algorithm to the 20 test cases available in the test data above</li>
+<li>should also apply your machine learning algorithm to the 20 test cases available in the test data above
+&hellip;The packages we use here include caret, MASS, plyr, knitr and e1071. </li>
 </ul>
 </blockquote>
 
-<pre><code class="r">setwd(&quot;~/R WS/MachineLearningProject&quot;) # set 
+<pre><code class="r"># setwd(&quot;~/R WS/MachineLearningProject/MachineLearningProject&quot;) # set current workspace, edit here if any differences
+if (!require(&quot;bst&quot;,character.only = TRUE)){
+  install.packages(&quot;bst&quot;,dep=TRUE)}
 </code></pre>
 
-<pre><code class="r">summary(cars)
+<pre><code>## Loading required package: bst
+## Loading required package: rpart
+## Loading required package: gbm
+## Loading required package: survival
+## Loading required package: splines
+## Loading required package: lattice
+## Loading required package: parallel
+## Loaded gbm 2.1
 </code></pre>
 
-<pre><code>##      speed           dist    
-##  Min.   : 4.0   Min.   :  2  
-##  1st Qu.:12.0   1st Qu.: 26  
-##  Median :15.0   Median : 36  
-##  Mean   :15.4   Mean   : 43  
-##  3rd Qu.:19.0   3rd Qu.: 56  
-##  Max.   :25.0   Max.   :120
+<pre><code class="r">if (!require(&quot;caret&quot;,character.only = TRUE)){
+  install.packages(&quot;caret&quot;,dep=TRUE)}
 </code></pre>
 
-<p>You can also embed plots, for example:</p>
-
-<pre><code class="r">plot(cars)
+<pre><code>## Loading required package: caret
+## Loading required package: ggplot2
+## 
+## Attaching package: &#39;caret&#39;
+## 
+## Das folgende Objekt ist maskiert from &#39;package:survival&#39;:
+## 
+##     cluster
 </code></pre>
 
-<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfgAAAGwCAMAAABy/YdMAAAAbFBMVEX9/v0AAAAAADkAAGUAOTkAOWUAOY8AZrU5AAA5ADk5AGU5OY85j9plAABlADllAGVlOQBlZjlltf2POQCPOTmPOWWPjzmPtY+P2/21ZgC1/rW1/v3ajzna24/a/v39tWX924/9/rX9/tr9/v0hhXJqAAAAJHRSTlP//////////////////////////////////////////////wBYLA0NAAAACXBIWXMAAAsSAAALEgHS3X78AAAJjElEQVR4nO3di3LbuBlA4bW7jd2snLTyXqSNGl38/u9YkVbqRKIVUsRPAjjnm061bSYIN8ckCF2gX16E9MvcB6B5GB7K8FCGhzI8lOGhDA9leCjDQxkeyvBQhocyPJThoQwPZXgow0MZHsrwUIaHMjyU4aEMD2V4KMNDGR7K8FCGhzI8lOGhDA9leCjDQxkeyvBQhocyPJThoQwPZXgow0MZHsrwUIaHMjyU4aEMD2V4KMNDGR7K8FCGhzI8lOGhDA9leCjDQxkeakz4O+UsMPyI36too8PvHtufn398GTq0ZjU2/OF52T5uP3wdOLRmNTb8/vOXHx77D61ZecZDjZ7j90/O8SXyrh7K8FAplnP3K2/uMvPTJ2iS3NwdnheGz8rdy0//+tMs59YP34Xv+aSg4kwQ/rSc2/z60TM+HxOEPy7nFs3D5nI9Z/j5xM/xtw+tWRkeyvBQhocavZx7Oq3dvLkry+gzvnn25qahNavxl/r9p9VNQ2tWzvFQhocyPJThoQwPZXgow0MZHsrwUIaHMjyU4aEMD2V4KMNDGR7K8FCGhzI8lOGhDA9leCjDQxkeyvBQhocyPJThody2HMpNjKHcthzKMx7KbcuhvKuHMjyUyzkob+6gApZzblteAs94KJdzUN7VQxkeyvBQhody23Ioty2HcttyKOd4KMNDGR7K8FCGr5JfMco0xZcK3zy04vR4O4Tha+QZD+UZD+UZT+Vdvd5heCjDQxkeyvBQhocyPJThoQwPZXgow0MZHsrwEOcv2xie4eKFWsNPZOatYQw/kx5vjZj2zzf8NOYO7xw/k9nDnzP8RHLb/s3wUG5pCuUGh1B+QwWUZzyUW5pel9vNeDLe1V+V3fI7mYDwNW1bbvh3HZdzD5tqL/WGf8/h99XL5uHY/7c6b+7quHB1SLGc2yxczhXHMx4qxRy/qHeOr5fLOSjDTyS3u0TDTyO7daHhp2F4KMNTOccrC4aHMjyU4aEMD2V4KMNDGR7K8FCGr5L71TP1eGXA8DUyPJThqZzjMzbvC7WGn8vMb80w/FwMD2V4Kud4DZHo58XwhUk1Qxi+MIaHmjT864ffOz4CP2ZoXeg1fU83x5/2tbq7u9zRbMzQOjfpAm/AGZ94aJ3LL3zI0DqXYfjNh6+bu7tl0qF1YcqndPpd6j+tjv/ZffTmrh595/jjOd8d3m3Ly9TzUn93v9p2XurdxLhQKfa5+/6x/9Ca1eh97jzjy9TnCZzPf7+7NbnblpfKdfxV2W1dk0xAeLctL8GQ5+o7L/W7x+XhufN5/Br+wtDhj9aL4381exVfaG7u1st6NzGu48LVYezLssf/s9nA2uVcaXqFPzy3Z3zny7LH0317/NXt5eXA8Dnrd6lvZvG7riv90bqd/zt+0fA5czkHZfiJ9LlLzO5l2ZChWfqsCzN8I0bE0CyGhzI8lXN86fJ7Lu+mIzL8QPk9e3/bERl+IMOPHbpQhh87dKkC5/gbh3aOL5zLOSjDQxmeyidwipffszznDB8hvzXfBcNHMDyU4amc4zWAd/VMruOhDA9leCrn+JlMey/ufvW5mHb1PfNa3/BvDP/G8JX8aZ1//BWo8M7xb1jhSQwPZXgow0MZfiK5vVA7OrzblveS3VszxoZ3E+N+qgvvtuX9VBfeM76n6ub4yrct76OjaW6ZL3lXP1rHVTy7C/ulgPA1bVveBzl85xdUZf5vngwz/JXN7DP/N0+HOcfvn47J0Wd8mRJc6vdPH/5r+NIkmeN3j13fWmL4nLmcgzL8dfntcZXqT7/+y/Twgesy32yZM8OnH7oIhk8/dBmc45MPHeq2v9T8n29Lp87wt11GC3iGPR3Dj/1dhTL82N9VqDrDTzvHJ3t1zo0RipLs9fhJrziGH83ww4auhuGHDV0P5/hBQ2tWhocyPJThoQwPhQl/ecdMei3uEiX85RoZ9cz8JcNDGR6KEt45/kyl4ZM9ZVrtz0ud4ZO9SFLvDGH4q7/L8OmHjmT4n6ozfK+JuNf07RyffOi51XLq3sjwUIaH4oavZbK+Ue7h2XUCjQ4fu205/HocaGz44E2MDR9lbPjgbcsNHyXzM945PsroOb7cbcvTfUSyRLnf1ce5cRapZfIJCF/ItuWGv6bXcu5+VeJ30hj+ml43d4fnRW7hb3t1LtnQBUiznFs/5BW+ltMyUKLl3ObXy43LDZ+zBMu5RfOwyeobKrreS1PHFTqZSpdzF5m9BpwpL/yN75x+MfwPigsPX4UlQwnvHH8GE14/Ki68p24a5YVPhv0TxA0PnzMMD2V4KG545/hrag7PZngow0MZHmqy8NV+c1+hpgofuHiCr8tuZHgow0M5x0N5Vw9leCjDQxkeyvBQhocyPJThoQwPlXt4n5ULknl4n4ePYngow0NlHt45PkoNL8vqBhW8EUO3MDyU4aGc46FGh4/9ahJFGRs++osKFGRs+I6vJilk23I4z3io0XN8uV9Nwpb7U7YKYngow0NFhlfO4sL//CejzLHLHHrg2IavZWjDQ4c2PHRow0OHNjx0aMNDh84pvPJleCjDQxkeyvBQhocyPJThoQwPZXiouPCbu8635qaw+/ilfffv5Tu+0wwdcejNB5KWQUd9GnvQYceFXy+jRt42/3rN+/03DyFDRxz6/tPqZfevVchRn8Yedthh4Q+/r4JGXt//dTwtm0/2tKdn+qEjDn3b1F4vQ476NPawww4L334OI+ikb/7qdr99bX/UA4aOOvTj4QYddTv2sMMOC99ce6LO+qZO85GuoPBBh354XkQddTv2sMOOvasPmueDz/hW8kPfPy1eoo66HbvV+7CLDR8yWwaG3z02A8Yc9evYrfnDNxe1wx9xy7nm4pb+rv7/s0jqQz+1CTnq09jDDjt0HX8fdGM/wTo+9aFv2g+3LEOO+tvYgw7bZ+6gDA9leCjDQxkeyvBQhocyPJThoQwPZXgow0MZHsrwUIaHMjyU4aEMD2V4KMNDGf4d376Lp1aGf4fha7VtP1O8//xn+57k/VP7Odm3h3/+2/BVaj7Tsnk4Jv7wdXtsvX79oMPbwzbqE5+Z4IZ//QTb/mnZfNKw+V/HH4VvD5+/eKmv1u6xuca3/dfL9iPG96vTQ/txmriNHbLADf/SftqsCd+c8a9foPrdg2d8pZqPGDbhnx7af1wvzh+c4yu1fr2r//Sfb3f13z0cnr2rr1zIviQlMLzhRWJ4KMNDGR7K8FCGhzI8lOGhDA9leCjDQxkeyvBQhocyPJThof4HqAXqr1NnsZQAAAAASUVORK5CYII=" alt="plot of chunk unnamed-chunk-3"/> </p>
+<pre><code class="r">if (!require(&quot;e1071&quot;,character.only = TRUE)){
+  install.packages(&quot;e1071&quot;,dep=TRUE)}
+</code></pre>
+
+<pre><code>## Loading required package: e1071
+</code></pre>
+
+<pre><code class="r">if (!require(&quot;plyr&quot;,character.only = TRUE)){
+  install.packages(&quot;plyr&quot;,dep=TRUE)}
+</code></pre>
+
+<pre><code>## Loading required package: plyr
+</code></pre>
+
+<pre><code class="r">if (!require(&quot;MASS&quot;,character.only = TRUE)){
+  install.packages(&quot;MASS&quot;,dep=TRUE)}
+</code></pre>
+
+<pre><code>## Loading required package: MASS
+</code></pre>
+
+<pre><code class="r">if (!require(&quot;knitr&quot;,character.only = TRUE)){
+  install.packages(&quot;knitr&quot;,dep=TRUE)}
+</code></pre>
+
+<p>We start with data training process.
+Cross-validation is a model validation technique used to evaluate how the results of a statistical analysis can be generalized to a set of independent data. Notice that in a prediction problem it is normal to have a set of data you can develop your model with (training data) and another set, treated like unknown data, you can test your model with (testing data).</p>
+
+<pre><code class="r">trainedData &lt;- read.csv(&quot;pml-training.csv&quot;) # import training data
+NAs &lt;- apply(trainedData,2,function(x) {sum(is.na(x))}) 
+validData &lt;- trainedData[,which(NAs == 0)]
+trainedIndex &lt;- createDataPartition(y = validData$classe, p=0.8,list=FALSE)
+trainData &lt;- validData[trainedIndex,]
+testData &lt;- validData[-trainedIndex,]
+removeIndex &lt;- grep(&quot;timestamp|X|user_name|new_window&quot;,names(trainData))
+trainData &lt;- trainData[,-removeIndex]
+</code></pre>
+
+<p>&hellip;In this project, you can use an important set of data (with an high number of cases) and you will know its classification by the proposed categories (A,B,C,D,E). To do a cross-validation, you need to divide the data in two groups: on one side you will have the training data and on the other side you will have the testing data. So,you  can understand how good your model is.
+&hellip;To split the data I used the caret function &ldquo;createDataPartition&rdquo;, and the datas has been  splitted in various size to test more than one option, in particular I used training data=80% of the total data. </p>
+
+<pre><code class="r">dataModel &lt;- train(trainData$classe ~  gyros_arm_x + gyros_arm_y + gyros_arm_z+
+                     accel_arm_x + accel_arm_y + accel_arm_z +
+                     gyros_dumbbell_x + gyros_dumbbell_y + gyros_dumbbell_z + 
+                     accel_dumbbell_x + accel_dumbbell_y + accel_dumbbell_z +
+                     gyros_forearm_x + gyros_forearm_y + gyros_forearm_z + 
+                     accel_forearm_x + accel_forearm_y + accel_forearm_z,data = trainData,preProcess=c(&quot;center&quot;,&quot;scale&quot;),
+                   maximize=TRUE,method = &#39;lda&#39;, verbose=TRUE)
+</code></pre>
+
+<p>&hellip;For training stage it has been used caret R package, in particular train function. This function allows different configurations and several training and preprocessing  methods, for example:</p>
+
+<ul>
+<li> Bayesian generalized linear model - bayesglm.</li>
+<li>  CART - rpart.</li>
+<li>  Linear discriminant analysis - lda. </li>
+<li>  Naive bayes - nb.</li>
+<li>  Random forest - rf.<br/></li>
+<li>  k-nearest neighbors - knn</li>
+</ul>
+
+<p>&hellip;We use Linear discriminant analysis (method=&#39;lda&#39;), see <a href="http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/lda.html">http://stat.ethz.ch/R-manual/R-patched/library/MASS/html/lda.html</a> for more details. </p>
+
+<pre><code class="r">NAs &lt;- apply(testData,1,function(x) {sum(is.na(x))})
+validTest &lt;- testData[which(NAs == 0),]
+print(confusionMatrix(predict(dataModel,validTest),validTest$classe))
+</code></pre>
+
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   A   B   C   D   E
+##          A 726 154 325 113 228
+##          B  42 330  26  79 181
+##          C  84  73 185  61  91
+##          D 190  83  87 351 128
+##          E  74 119  61  39  93
+## 
+## Overall Statistics
+##                                         
+##                Accuracy : 0.43          
+##                  95% CI : (0.414, 0.445)
+##     No Information Rate : 0.284         
+##     P-Value [Acc &gt; NIR] : &lt;2e-16        
+##                                         
+##                   Kappa : 0.269         
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16        
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity             0.651   0.4348   0.2705   0.5459   0.1290
+## Specificity             0.708   0.8963   0.9046   0.8512   0.9085
+## Pos Pred Value          0.470   0.5015   0.3745   0.4184   0.2409
+## Neg Pred Value          0.836   0.8686   0.8545   0.9053   0.8224
+## Prevalence              0.284   0.1935   0.1744   0.1639   0.1838
+## Detection Rate          0.185   0.0841   0.0472   0.0895   0.0237
+## Detection Prevalence    0.394   0.1677   0.1259   0.2139   0.0984
+## Balanced Accuracy       0.679   0.6656   0.5875   0.6985   0.5187
+</code></pre>
+
+<p>&hellip;With the 20 sets of testing data and &ldquo;predict&rdquo; Caret-function we can make an idea of the accuracy of the model constructed with the training data.</p>
+
+<pre><code class="r">test_clase &lt;- read.csv(&quot;pml-testing.csv&quot;)
+prediction &lt;- predict(dataModel,test_clase)
+</code></pre>
+
+<p>Below is the results of predictions of the 20 tests datasets.</p>
+
+<pre><code class="r">results&lt;-as.data.frame(cbind(1:20,as.character(prediction)))
+names(results)&lt;-(c(&quot;Test No.&quot;,&quot;Clase&quot;))
+results
+</code></pre>
+
+<pre><code>##    Test No. Clase
+## 1         1     D
+## 2         2     A
+## 3         3     A
+## 4         4     A
+## 5         5     A
+## 6         6     A
+## 7         7     D
+## 8         8     D
+## 9         9     A
+## 10       10     A
+## 11       11     A
+## 12       12     A
+## 13       13     B
+## 14       14     A
+## 15       15     A
+## 16       16     B
+## 17       17     A
+## 18       18     E
+## 19       19     B
+## 20       20     B
+</code></pre>
 
 </body>
 
